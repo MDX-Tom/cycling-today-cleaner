@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Cycling Today 清爽移动播放器
 // @namespace    local.codex.cycling-today
-// @version      1.4.0
+// @version      1.4.1
 // @description  清除 Cycling Today/播放器广告，并用 iPhone Safari UA 重新获取被 Cloudflare 拦截的播放器及其资源。
 // @author       Codex
 // @match        https://cycling.today/*
@@ -174,7 +174,14 @@
                 'Referer': 'https://explicitdevote.net/'
             };
 
-            if (Number.isFinite(options.rangeStart) && Number.isFinite(options.rangeEnd)) {
+            // hls.js uses 0/0 for ordinary (non-byte-range) fragments. Sending
+            // that pair as `bytes=0--1` makes the media CDN answer HTTP 416.
+            if (
+                Number.isFinite(options.rangeStart)
+                && Number.isFinite(options.rangeEnd)
+                && options.rangeStart >= 0
+                && options.rangeEnd > options.rangeStart
+            ) {
                 headers.Range = `bytes=${options.rangeStart}-${options.rangeEnd - 1}`;
             }
 
@@ -302,7 +309,7 @@
         return source
             .replace(
                 /if\(a\)\{if\(document\.querySelector\("#config"\)/,
-                'if(a){a.p2p=!1;a.swarmcloud=!1;if(document.querySelector("#config")'
+                'if(a){a.p2p=!1;a.swarmcloud=!1;a.stream_url=a.stream_url_nop2p||a.stream_url;if(document.querySelector("#config")'
             )
             .replace(/void 0!==a\.pops&&0<a\.pops\.length&&/g, 'false&&')
             .replace(/""!=a\.hframes&&/g, 'false&&')
